@@ -1,0 +1,159 @@
+=title Automatyczna konwersja zmiennych tekstowych na numeryczne albo rzutowanie w Perlu
+=timestamp 2013-01-10T10:45:56
+=indexes is_number, looks_like_number, Scalar::Util, casting, type conversion
+=status show
+=books beginner
+=author szabgab
+=comments_disqus_enable 1
+=original automatic-value-conversion-or-casting-in-perl
+=translator rozie
+
+=abstract start
+
+Wyobra¼ sobie, ¿e przygotowujesz listê zakupów, pisz±c na niej
+
+<code>
+"2 loaves of bread"
+</code>
+
+i wrêczasz j± swojej drugiej po³ówce, która od razu
+rzuca Ci w twarz b³±d konwersji typu.
+Przecie¿ "2" jest tu stringiem, nie zmienn± numeryczn±.
+
+By³oby to frustruj±ce, nieprawda¿?
+
+=abstract end
+
+Zobacz tak¿e screencast o <a href="/beginner-perl-maven-string-number-conversion">konwersji ci±gów znaków na liczby w Perlu</a>.
+
+<h2>Konwersja typów w Perlu</h2>
+
+W wiêkszo¶ci jêzyków programowania typ operandu definiuje, jak siê operator zachowuje.
+Czyli, <i>dodawanie</i> dwóch liczb oznacza dodawanie numeryczne, podczas gdy <i>dodawanie</i> dwóch ci±gów znaków
+³±czy je. Cechê tê nazywamy przeci±¿eniem operatora.
+
+Perl dzia³a w wiêkszo¶ci przypadków dok³adnie odwrotnie.
+
+W Perlu, operator jest tym, co definiuje jak operandy s± u¿ywane.
+
+Oznacza to, ¿e je¶li u¿ywasz operacji numerycznych (np. dodawania), wówczas obie warto¶ci
+s± automatycznie konwertowane na liczby. Je¶li u¿ywasz operacji dla ci±gów znaków,
+(np. z³±czenia), wtedy obie warto¶ci s± automatycznie konwertowane na ci±gi znaków.
+
+Programi¶ci C prawdopodobnie nazwali by te konwersje <b>rzutowaniem</b> ale to s³owo
+nie jest u¿ywane w ¶wiecie Perla. Prawdopodobnie dlatego, ¿e ca³o¶æ odbywa siê automatycznie.
+
+Perl nie dba o to, czy zapisujesz co¶ jako liczbê, czy jako ci±g znaków.
+Automatycznie konwertuje pomiêdzy nimi, bazuj±c na kontek¶cie.
+
+Konwersja <hl>liczba => ci±g znaków</hl> jest prosta.
+Jest to jedynie wyobra¿enie sobie, jakby "" pojawi³o siê wokó³ warto¶ci numerycznej.
+
+Konwersja <hl>ci±g znaków => liczba</hl> mo¿e byæ nieco zastanawiaj±ca.
+Je¶li ci±gi znaków wygl±daj± Perlowi na liczby, wtedy jest to proste.
+Warto¶æ numeryczna jest dok³adnie taka sama. Bez cudzys³owów.
+
+Je¶li jest jaki¶ znak, który powstrzymuje perla przed pe³n± konwersj± ci±gu znaków
+do liczby, wówczas perl u¿yje tak wiele, jak tylko mo¿e z lewej strony ci±gu znaków do
+stworzenia warto¶ci numerycznej, a zignoruje resztê.
+Pozwól, ¿e poka¿ê kilka przyk³adów:
+
+<code>
+Original   As string   As number
+
+  42         "42"        42
+  0.3        "0.3"       0.3
+ "42"        "42"        42
+ "0.3"       "0.3"       0.3
+
+ "4z"        "4z"        4        (*)
+ "4z3"       "4z3"       4        (*)
+ "0.3y9"     "0.3y9"     0.3      (*)
+ "xyz"       "xyz"       0        (*)
+ ""          ""          0        (*)
+ "23\n"      "23\n"      23
+</code>
+
+We wszystkich przypadkach, gdzie konwersja ci±gu znaków na liczbê nie jest doskona³a,
+poza ostatnim przypadkiem, perl zg³osi ostrze¿enie. Znaczy, zak³adaj±c, ¿e w³±czy³e¶
+<hl>use warnings</hl>, jak jest zalecane.
+
+<h2>Example</h2>
+
+Zobaczmy teraz w kodzie to, co widzia³e¶ w tabeli:
+
+<code lang="perl">
+use strict;
+use warnings;
+
+my $x = "4T";
+my $y = 3;
+
+</code>
+
+Z³±czenie konwertuje obie warto¶ci do ci±gów znaków:
+
+<code lang="perl">
+print $x . $y;    # 4T3
+</code>
+
+Dodawanie numeryczne konwertuje obie warto¶ci do liczb:
+
+<code lang="perl">
+print $x + $y;  # 7
+                # Argument "4T" isn't numeric in addition (+) at ...
+</code>
+
+<h2>Argument nie jest numeryczny (argument isn't numeric)</h2>
+
+W przypadku, kiedy próbujesz konwertowaæ ci±g znaków na liczbê i konwersja nie jest doskona³a,
+pojawia siê <a href="/argument-isnt-numeric-in-numeric">ostrze¿enie</a>.
+
+Istnieje 
+
+There are a number of other common warnings and errors in Perl.
+For example <a href="/global-symbol-requires-explicit-package-name">Global symbol requires explicit package name</a>
+and <a href="/use-of-uninitialized-value">Use of uninitialized value</a>.
+
+<h2>How to avoid the warning?</h2>
+
+It is nice that perl will warn you (if asked to) when the type conversion was not perfect, but isn't there a function
+like <b>is_number</b> that will check if the given string is really a number?
+
+Yes and no.
+
+Perl does not have an <b>is_number</b> function as that would be some kind of commitment that the Perl developers
+know what is a number. Unfortunately the rest of the world cannot agree on this point exactly. There are systems
+where ".2" is accepted as a number, but other systems where that is not accepted.
+Even more common that "2." is not accepted, but there are system where that is a perfectly acceptable number.
+
+There are even places where 0xAB is considered a number. A Hexadecimal number.
+
+So there is no <b>is_number</b> function, but there is a less committing function called <b>looks_like_number</b>.
+
+That's exactly what you think it is. It will check if the given string looks like a number for perl.
+
+It is provided by the <a href="http://perldoc.perl.org/Scalar/Util.html">Scalar::Util</a> module
+and you can use it like this:
+
+<code lang="perl">
+use strict;
+use warnings;
+
+use Scalar::Util qw(looks_like_number);
+
+print "How many loaves of bread shall I buy? ";
+my $loaves = <STDIN>;
+chomp $loaves;
+
+if (looks_like_number($loaves)) {
+    print "I am on it...\n";
+} else {
+    print "Sorry, I don't get it\n";
+}
+</code>
+
+
+Don't forget the milk too!
+
+
